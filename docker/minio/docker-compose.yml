@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  minio:
+    container_name: ats-minio
+    image: bitnami/minio:2024.4.6
+    restart: always
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - TZ=Europe/Istanbul
+    volumes:
+      - minio_volume:/bitnami/minio/data
+
+volumes:
+  minio_volume:
+    driver: local
+    name: ats_minio
+    driver_opts:
+      type: none
+      o: bind
+      device: $HOME/data/ats/minio

@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  postgres:
+    container_name: ats_postgres
+    image: postgres:alpine3.18
+    restart: always
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - PGDATA=/data/postgres
+      - TZ=Europe/Istanbul
+    volumes:
+      - ${HOME}/data/ats/postgres:/data/postgres

@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users
+
+model UserSecret {
+  id            Int       @id @default(autoincrement())
+  password      String
+  resetCode     String?   @unique
+  codeCreatedAt DateTime?
+  retryCount    Int       @default(0)
+  user          User?
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  phone         String?
+  role          UserRoles      @default(user)
+  isActive      Boolean        @default(true)
+  secret        UserSecret     @relation(fields: [secretId], references: [id])
+  lastLogin     DateTime?
+  secretId      Int            @unique
+  createdAt     DateTime       @default(now())
+  deletedAt     DateTime?
+  request       Request[]
+  notifications Notification[]
+}
+
+model Referral {
+  id          Int             @id @default(autoincrement())
+  status      CandidateStatus
+  description String?
+  requestId   Int
+  candidateId Int
+  createdAt   DateTime        @default(now())
+
+  request   Request   @relation(fields: [requestId], references: [id])
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+}
+
+// Requests
+
+model Request {
+  id                     Int              @id @default(autoincrement())
+  department             String?
+  workerReqCount         Int
+  jobDescription         String?
+  description            String?
+  requiredQualifications String?
+  salary                 Int
+  prim                   Boolean
+  workType               WorkType[]
+  companyWorkType        CompanyWorkType?
+  workDays               WorkDay[]
+  workHourStart          String?
+  workHourEnd            String?
+  advisorName            String?
+  advisorPhone           String?
+  advisorTitle           String?
+  advisorEmail           String?
+  sideRights             SideRights[]
+  gender                 Gender?
+  militaryService        MilitaryService?
+  status                 RequestStatus
+  closedAt               DateTime?
+  isExternal             Boolean          @default(false)
+  languages              Json[]
+  position               Position?        @relation(fields: [positionId], references: [id])
+  user                   User?            @relation(fields: [userId], references: [id])
+  company                Company          @relation(fields: [companyId], references: [id])
+  positionId             Int?
+  userId                 Int?
+  companyId              Int
+  referrals              Referral[]
+}
+
+model ExternalRequest {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique()
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+}
+
+// Candidates
+
+model CandidateCv {
+  id          Int       @id @default(autoincrement())
+  uri         String
+  isExternal  Boolean
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId Int
+}
+
+model CandidatePosition {
+  candidateId Int
+  positionId  Int
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  position    Position  @relation(fields: [positionId], references: [id])
+
+  @@id([candidateId, positionId])
+}
+
+model CandidateLanguage {
+  id   Int    @id @default(autoincrement())
+  name String
+  rate Int    @db.SmallInt()
+
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId Int
+}
+
+model CandidateReference {
+  id    Int     @id @default(autoincrement())
+  name  String
+  phone String?
+
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId Int
+}
+
+model Candidate {
+  id              Int                  @id @default(autoincrement())
+  name            String
+  gender          Gender
+  militaryService MilitaryService
+  email           String?
+  phone           String?
+  note            String?
+  compatibility   Compatibility?
+  location        String?
+  salary          Float?
+  cvs             CandidateCv[]
+  positions       CandidatePosition[]
+  languages       CandidateLanguage[]
+  references      CandidateReference[]
+  rate            Int?                 @db.SmallInt()
+
+  createdAt DateTime   @default(now())
+  deletedAt DateTime?
+  referrals Referral[]
+}
+
+// Company
+
+model CompanyContract {
+  id        Int      @id @default(autoincrement())
+  uri       String
+  startDate DateTime
+  endDate   DateTime
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+}
+
+model Company {
+  id               Int               @id @default(autoincrement())
+  name             String
+  sector           String
+  email            String?
+  location         String?
+  address          String?
+  description      String?
+  deletedAt        DateTime?
+  request          Request[]
+  contracts        CompanyContract[]
+  externalRequests ExternalRequest[]
+  createdAt        DateTime          @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  isReaded  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+}
+
+// Autocomplete
+
+model Position {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  candidatePosition CandidatePosition[]
+  request           Request[]
+
+  @@index([name])
+}
+
+model Sector {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@index([name])
+}
+
+model Location {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@index([name])
+}
+
+// Enums
+
+enum UserRoles {
+  admin
+  user
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum MilitaryService {
+  done
+  exempt
+  notDone
+}
+
+enum Compatibility {
+  notr
+  positive
+  negative
+  blackList
+  incompatible
+}
+
+enum WorkType {
+  full
+  shift
+  partTime
+}
+
+enum CompanyWorkType {
+  longlist
+  reference
+  shortlist
+}
+
+enum WorkDay {
+  saturday
+  sunday
+  weekday
+}
+
+enum SideRights {
+  car
+  meal
+  phone
+  health
+  transport
+}
+
+enum RequestStatus {
+  open
+  closed
+  cancelled
+}
+
+enum CandidateStatus {
+  evaluation
+  employment
+  cancellation
+  elimination
+}
