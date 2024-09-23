@@ -43,7 +43,7 @@ Bu proje `Fastify` üzerinde inşa edilmiştir. Database olarak `Postgresql` kul
 Projeyi klonlayın:
 
 ```bash
-  git clone [proje-linki]
+  git clone git@github.com:Fatihkrty/aday-takip-sistemi-server.git
 ```
 
 Proje dizinine gidin:
